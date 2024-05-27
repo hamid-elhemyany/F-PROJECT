@@ -1,0 +1,65 @@
+//hamid_elhemyany_AOH9XE
+//Client.fs
+open WebSharper
+open WebSharper.UI
+open WebSharper.UI.Client
+open Data
+open Models
+
+[<SPAEntryPoint>]
+let Main () =
+    let items = Var.CreateList (getItems ())
+    div [
+        h1 [text "CRUD App"]
+        div [
+            inputAttr [Attr.Value ""]
+            |>! OnInput (fun el _ -> el.Value |> addItem; items.Value <- getItems ())
+            button [text "Add Item"; on.click (fun _ -> addItem (input.Value); items.Value <- getItems ())]
+        ]
+        div [
+            Doc.BindSeq (fun item ->
+                div [
+                    span [text item.Name]
+                    button [text "Delete"; on.click (fun _ -> deleteItem item.Id; items.Value <- getItems ())]
+                ]
+            ) items.View
+        ]
+    ]
+
+Client.Main.Doc <- Main ()
+
+
+
+
+//site.fs
+module Models
+
+type Item = {
+    Id: int
+    Name: string
+}
+
+module Data
+
+open Models
+
+let mutable items = [
+    { Id = 1; Name = "Item 1" }
+    { Id = 2; Name = "Item 2" }
+]
+
+let getNextId () =
+    if items.IsEmpty then 1
+    else (List.maxBy (fun item -> item.Id) items).Id + 1
+
+let addItem name =
+    let newItem = { Id = getNextId(); Name = name }
+    items <- newItem :: items
+
+let updateItem id newName =
+    items <- items |> List.map (fun item -> if item.Id = id then { item with Name = newName } else item)
+
+let deleteItem id =
+    items <- items |> List.filter (fun item -> item.Id <> id)
+
+let getItems () = items
